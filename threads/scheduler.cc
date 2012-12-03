@@ -18,8 +18,9 @@
 // All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
 
-#include "copyright.h"
 #include "scheduler.h"
+
+#include "copyright.h"
 #include "system.h"
 
 //----------------------------------------------------------------------
@@ -30,7 +31,14 @@
 Scheduler::Scheduler()
 { 
     readyList = new List; 
+	scheduleStrategy = RoundRobin;
 } 
+
+Scheduler::Scheduler(ScheduleStrategy scheduleStrategy_p)
+{
+   	readyList = new List;
+	scheduleStrategy = scheduleStrategy_p;
+}	
 
 //----------------------------------------------------------------------
 // Scheduler::~Scheduler
@@ -54,9 +62,25 @@ void
 Scheduler::ReadyToRun (Thread *thread)
 {
     DEBUG('t', "Putting thread %s on ready list.\n", thread->getName());
+	//若是动态优先级的调度算法的话,则当唤醒线程时,
+	//动态优先级+5
+	if (scheduleStrategy == DynamicPriority 
+		&& thread->getStatus() == BLOCKED)
+		thread->Nice(5);
 
     thread->setStatus(READY);
-    readyList->Append((void *)thread);
+
+	switch(scheduleStrategy) {
+	case DynamicPriority:
+		readyList->SortedInsert(static_cast<void *>(thread),
+								thread->getPriority());
+		break;
+	case RoundRobin:
+		readyList->Append(static_cast<void *>(thread));
+		break;
+	default:
+		break;
+	}
 }
 
 //----------------------------------------------------------------------
@@ -70,7 +94,14 @@ Scheduler::ReadyToRun (Thread *thread)
 Thread *
 Scheduler::FindNextToRun ()
 {
-    return (Thread *)readyList->Remove();
+	switch (scheduleStrategy) {
+	case DynamicPriority:
+		return static_cast<Thread *>(readyList->SortedRemove(NULL));
+	case RoundRobin:
+		return static_cast<Thread *>(readyList->Remove());
+	default:
+		break;
+	}
 }
 
 //----------------------------------------------------------------------
@@ -144,4 +175,21 @@ Scheduler::Print()
 {
     printf("Ready list contents:\n");
     readyList->Mapcar((VoidFunctionPtr) ThreadPrint);
+}
+
+void
+Scheduler::ApplyNiceToReadyList(int increment)
+{
+		List *tmpList = new List;
+		Thread *tmpThread;
+		while (!readyList->IsEmpty()) {
+			tmpThread = static_cast<Thread *>(readyList->Remove());
+			tmpThread->Nice(increment);
+			tmpList->SortedInsert(static_cast<void *>(tmpThread),
+									tmpThread->getPriority());
+		}
+
+		//此时readyList已空,将其指向的空间删除,让readyList重新指向tmpList
+		delete readyList;
+		readyList = tmpList;
 }

@@ -77,6 +77,7 @@ TimerInterruptHandler(_int dummy)
 void
 Initialize(int argc, char **argv)
 {
+	ScheduleStrategy scheduleStrategy = RoundRobin;
     int argCount;
     char* debugArgs = "";
     bool randomYield = FALSE;
@@ -108,6 +109,15 @@ Initialize(int argc, char **argv)
 						// number generator
 	    randomYield = TRUE;
 	    argCount = 2;
+	} else if (!strcmp(*argv, "-S")) {
+		switch((*(argv + 1))[0]) {
+		case 'd':
+			scheduleStrategy = DynamicPriority;
+			break;
+		default:
+			break;
+		}
+		argCount = 2;
 	}
 #ifdef USER_PROGRAM
 	if (!strcmp(*argv, "-s"))
@@ -137,7 +147,7 @@ Initialize(int argc, char **argv)
     DebugInit(debugArgs);			// initialize DEBUG messages
     stats = new Statistics();			// collect statistics
     interrupt = new Interrupt;			// start up interrupt handling
-    scheduler = new Scheduler();		// initialize the ready queue
+	scheduler = new Scheduler(scheduleStrategy);
     // if (randomYield)				// start the timer (if needed)
 	timer = new Timer(TimerInterruptHandler, 0, randomYield);
 

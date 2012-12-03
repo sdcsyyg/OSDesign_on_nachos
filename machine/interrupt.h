@@ -56,6 +56,9 @@ enum IntType { TimerInt, DiskInt, ConsoleWriteInt, ConsoleReadInt,
 // to occur in the future.  The internal data structures are
 // left public to make it simpler to manipulate.
 
+//只用于该文件的在时钟到来时进行线程有关调度策略的处理
+static void ProcessScheduleStrategy(int ticks);
+
 class PendingInterrupt {
   public:
     PendingInterrupt(VoidFunctionPtr func, _int param, int time, IntType kind);

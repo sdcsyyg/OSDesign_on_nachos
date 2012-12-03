@@ -27,7 +27,8 @@ SimpleThread(_int which)
     int num;
     
     for (num = 0; num < 5; num++) {
-	printf("*** thread %d looped %d times\n", (int) which, num);
+	printf("*** thread %d which priority is %-3d looped %d times\n",
+			(int) which, currentThread->getPriority(), num);
         currentThread->Yield();
     }
 }
@@ -43,9 +44,11 @@ ThreadTest()
 {
     DEBUG('t', "Entering SimpleTest");
 
-    Thread *t = new Thread("forked thread");
+    Thread *t1 = new Thread("forked thread", 10);
+    Thread *t2 = new Thread("forked thread", -10);
 
-    t->Fork(SimpleThread, 1);
+    t1->Fork(SimpleThread, 1);
+    t2->Fork(SimpleThread, 2);
     SimpleThread(0);
 }
 

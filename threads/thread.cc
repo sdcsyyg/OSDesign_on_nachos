@@ -14,8 +14,8 @@
 // All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
 
-#include "copyright.h"
 #include "thread.h"
+
 #include "switch.h"
 #include "synch.h"
 #include "system.h"
@@ -32,7 +32,7 @@
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
-Thread::Thread(char* threadName)
+Thread::Thread(char* threadName, int staticPriority_p)
 {
     name = threadName;
     stackTop = NULL;
@@ -41,6 +41,10 @@ Thread::Thread(char* threadName)
 #ifdef USER_PROGRAM
     space = NULL;
 #endif
+
+	staticPriority = staticPriority_p;
+	dynamicPriority = 100;
+	priority = dynamicPriority - staticPriority;
 }
 
 //----------------------------------------------------------------------

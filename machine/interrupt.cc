@@ -40,6 +40,17 @@ static char *intTypeNames[] = { "timer", "disk", "console write",
 //	"time" is when (in simulated time) the interrupt is to occur
 //	"kind" is the hardware device that generated the interrupt
 //----------------------------------------------------------------------
+//根据动态优先级的思想当又一个时间片到来时,
+//当前线程减小动态优先级,就绪队列中的线程增加动态优先级
+void ProcessScheduleStrategy(int ticks)
+{
+	if (scheduler->getScheduleStrategy() == 
+		DynamicPriority) {
+		if (currentThread->Nice(0 - ticks) <= 0)
+			currentThread->Yield();
+		scheduler->ApplyNiceToReadyList(ticks);
+	}
+}
 
 PendingInterrupt::PendingInterrupt(VoidFunctionPtr func, _int param, int time, 
 				IntType kind)
@@ -155,10 +166,14 @@ Interrupt::OneTick()
 // advance simulated time
     if (status == SystemMode) {
         stats->totalTicks += SystemTick;
-	stats->systemTicks += SystemTick;
+		stats->systemTicks += SystemTick;
+
+		ProcessScheduleStrategy(SystemTick);
     } else {					// USER_PROGRAM
 	stats->totalTicks += UserTick;
 	stats->userTicks += UserTick;
+
+		ProcessScheduleStrategy(UserTick);
     }
     DEBUG('i', "\n== Tick %d ==\n", stats->totalTicks);
 
