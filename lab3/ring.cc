@@ -46,6 +46,9 @@ Ring::Ring(int sz)
     in = 0;
     out = 0;
     buffer = new slot[size]; //allocate an array of slots.
+	notFull = new Condition("The buffer is not full");
+	notEmpty = new Condition("The buffer is not empty");
+	mutex = new Lock("The monitor's lock");
 }
 
 //----------------------------------------------------------------------
@@ -61,6 +64,9 @@ Ring::~Ring()
     // but apparently G++ doesn't like that.
 
     delete [] buffer;
+	delete notFull;
+	delete notEmpty;
+	delete mutex;
 }
 
 //----------------------------------------------------------------------
@@ -74,9 +80,16 @@ Ring::~Ring()
 void
 Ring::Put(slot *message)
 {
+	mutex->Acquire();
+	while (Full())
+		notFull->Wait(mutex);
+
     buffer[in].thread_id = message->thread_id;
     buffer[in].value = message->value;
     in = (in + 1) % size;
+
+	notEmpty->Signal(mutex);
+	mutex->Release();
 }
 
 //----------------------------------------------------------------------
@@ -90,21 +103,29 @@ Ring::Put(slot *message)
 void
 Ring::Get(slot *message)
 {
+	mutex->Acquire();
+	while (Empty())
+		notEmpty->Wait(mutex);
+	
     message->thread_id = buffer[out].thread_id;
     message->value = buffer[out].value;
     out = (out + 1) % size;
+
+	notFull->Signal(mutex);
+	mutex->Release();
 }
 
 int
 Ring::Empty()
 {
-// to be implemented
+	return in == out;
 }
+
 
 int
 Ring::Full()
 {
-// to be implemented
+	return (in-out-1) == size;
 }
 
 

@@ -11,9 +11,13 @@
 // All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
 
+#include <cstdlib>
 #include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "copyright.h"
 #include "system.h"
+#include "thread.h"
 
 #include "synch.h"
 #include "ring.h"
@@ -34,8 +38,8 @@ Thread *consumers[N_CONS];  // and consumer threads;
 char prod_names[N_PROD][MAX_NAME];  //array of charater string for prod names
 char cons_names[N_CONS][MAX_NAME];  //array of charater string for cons names
 
-Semaphore *nempty, *nfull; //two semaphores for empty and full slots
-Semaphore *mutex;          //semaphore for the mutual exclusion
+//Semaphore *nempty, *nfull; //two semaphores for empty and full slots
+//Semaphore *mutex;          //semaphore for the mutual exclusion
     
 Ring *ring;
 
@@ -68,6 +72,8 @@ Producer(_int which)
     for (num = 0; num < N_MESSG ; num++) {
       // Put the code to prepare the message here.
       // ...
+		message->value=num;
+		message->thread_id = (int)which;
 
       // Put the code for synchronization before  ring->Put(message) here.
       // ...
@@ -152,7 +158,7 @@ ProdCons()
     // Put the code to construct a ring buffer object with size 
     //BUFF_SIZE here.
     // ...    
-
+	ring = new Ring(BUFF_SIZE);
 
     // create and fork N_PROD of producer threads 
     for (i=0; i < N_PROD; i++) 
@@ -165,7 +171,8 @@ ProdCons()
       //     the name in prod_names[i] and 
       //     integer i as the argument of function "Producer"
       //  ...
-
+	  producers[i] = new Thread(prod_names[i]);
+	  producers[i]->Fork(Producer, i);
     };
 
     // create and fork N_CONS of consumer threads 
@@ -178,7 +185,10 @@ ProdCons()
       //     the name in cons_names[i] and 
       //     integer i as the argument of function "Consumer"
       //  ...
-
+	  consumers[i] = new Thread(cons_names[i]);
+	  consumers[i]->Fork(Consumer, i);
     };
+
+	currentThread->Yield();
 }
 

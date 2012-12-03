@@ -6,6 +6,7 @@
 // All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
 
+#include "synch.h"
 
 // The following defines the ring buffer class.  The functions are
 // implemented in the file ring.cc.
@@ -41,6 +42,9 @@ class Ring {
     int size;         // The size of the ring buffer.
     int in, out;      // Index of 
     slot *buffer;       // A pointer to an array for the ring buffer.
+	Condition *notFull;
+	Condition *notEmpty;
+	Lock *mutex;
 };
 
 
